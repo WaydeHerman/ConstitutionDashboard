@@ -1,0 +1,3964 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <title>Constitution Dashboard</title>
+
+    <style>
+      body {
+        font-family: Sans-Serif;
+        height: 100%;
+        width: 100%;
+      }
+
+      .container {
+        width: 500px;
+      }
+
+      .chart {
+        width: 500px;
+      }
+
+      .chart-title {
+        font-weight: bold;
+        font-size: 16px;
+      }
+
+      .filter-container {
+        margin-top: 0px;
+      }
+
+      .filters {
+        display: inline-block;
+        padding: 5px 10px;
+        cursor: pointer;
+        border: 2px solid black;
+        margin: 10px;
+        font-size: 0.8em;
+      }
+
+      .filters:hover {
+        background-color: #404e4d;
+      }
+
+      .filters-active {
+        background-color: #f1f1f1;
+      }
+
+      .source-tooltip {
+        background-color: rgba(255, 255, 255, 0.8);
+        padding: 10px;
+        border: 1px solid black;
+        display: none;
+        pointer-events: none;
+        z-index: 240;
+        width: 300px;
+        margin: auto;
+      }
+
+      .source-tooltip-header {
+        font-weight: bold;
+        font-size: 16px;
+        line-height: 1.6em;
+      }
+
+      .source-tooltip-content {
+        font-size: 12px;
+        line-height: 1.4em;
+      }
+
+      .tooltip-container {
+        margin-top: 10px;
+      }
+
+      .tooltip-bold {
+        font-weight: bold;
+      }
+
+      .nodes {
+        cursor: pointer;
+        stroke: black;
+        stroke-width: 0px;
+      }
+
+      /* Legend */
+      .legend-title {
+        font-weight: bold;
+        font-size: 1em;
+      }
+
+      .legend-label {
+        font-size: 0.8em;
+      }
+
+      .legend-label-percentage {
+        font-weight: bold;
+        font-size: 1em;
+      }
+
+      .drop-container {
+        margin-left: 10px;
+      }
+
+      /* Drop Down */
+      .dropbtn {
+        background-color: #fff;
+        color: black;
+        padding: 10px;
+        font-size: 0.8em;
+        border: 2px solid black;
+        cursor: pointer;
+        min-width: 200px;
+        text-anchor: middle;
+      }
+
+      .dropdown-member {
+        text-anchor: middle;
+        width: 150px;
+      }
+
+      .dropdown-content {
+        display: none;
+        position: absolute;
+        background-color: #f1f1f1;
+        min-width: 150px;
+        z-index: 1;
+        max-height: 530px;
+        overflow: auto;
+        text-anchor: middle;
+      }
+
+      .dropdown-content a {
+        color: #404e4d;
+        min-width: 200px;
+        font-size: 0.8em;
+        padding: 10px 0px;
+        text-decoration: none;
+        display: block;
+        text-anchor: middle;
+        text-align: center;
+      }
+
+      .dropdown-content .sub-header {
+        color: #404e4d;
+        min-width: 200px;
+        font-size: 0.8em;
+        padding: 10px 0px;
+        text-decoration: none;
+        background-color: #e0e0e0;
+        cursor: default;
+        display: block;
+        text-anchor: middle;
+        text-align: center;
+      }
+
+      .dropdown-content a:hover {
+        background-color: #ddd;
+      }
+
+      .dropdown-member:hover .dropdown-content {
+        display: block;
+      }
+
+      .dropdown-member:hover .dropbtn {
+        background-color: #f4eddc;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="drop-container">
+      <div class="dropdown-member">
+        <button class="dropbtn">
+          <i class="arrow down"></i> Select Parliament Member
+          <img class="dropdown-icon" src="chevron-down-solid.svg" width="10" />
+        </button>
+        <div class="dropdown-content" id="member-selector"></div>
+      </div>
+    </div>
+    <div class="filter-container"></div>
+    <div class="container">
+      <div class="chart"></div>
+    </div>
+    <div class="tooltip-container">
+      <div class="source-tooltip">
+        <div class="source-tooltip-header"></div>
+        <div class="source-tooltip-content source-tooltip-content-0"></div>
+        <div class="source-tooltip-content source-tooltip-content-1"></div>
+        <div class="source-tooltip-content source-tooltip-content-2"></div>
+        <div class="source-tooltip-content source-tooltip-content-3"></div>
+        <div class="source-tooltip-content source-tooltip-content-4"></div>
+        <div class="source-tooltip-content source-tooltip-content-5"></div>
+        <div class="source-tooltip-content source-tooltip-content-6"></div>
+        <div class="source-tooltip-content source-tooltip-content-7"></div>
+        <div class="source-tooltip-content source-tooltip-content-8"></div>
+        <div class="source-tooltip-content source-tooltip-content-9"></div>
+        <div class="source-tooltip-content source-tooltip-content-10"></div>
+        <div class="source-tooltip-content source-tooltip-content-11"></div>
+        <div class="source-tooltip-content source-tooltip-content-12"></div>
+      </div>
+    </div>
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+
+    <script>
+      var initialWidth = 1400;
+      var initialHeight = 320;
+      var margin = { top: 20, left: 20, bottom: 20, right: 20 };
+      var mobile = 0;
+      var type = "Political block";
+      var legend;
+      const innerRadius = 140;
+      const outerRadius = 300;
+      const targetWidth = window.innerWidth;
+      const targetHeight = window.innerHeight;
+
+      var data = [
+        {
+          Name: "إيهاب شبلي حامد",
+          Gender: "male",
+          "Year of birth": "1974",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أحمد فاروق عرنوس",
+          Gender: "male",
+          "Year of birth": "1943",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "Public sector employee موظف عام",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أحمد نبيل محمد رفيق كزبري",
+          Gender: "male",
+          "Year of birth": "1971",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Businessman رجل أعمال",
+          "Occupation category": "Businessman",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أشواق عباس",
+          Gender: "female",
+          "Year of birth": "1979",
+          "Governorate of birth": "Damascus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أمجد ياسين عيسى",
+          Gender: "male",
+          "Year of birth": "1980",
+          "Governorate of birth": "Tartus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "Public sector employee موظف عام",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أمل يازجي",
+          Gender: "female",
+          "Year of birth": "1962",
+          "Governorate of birth": "Aleppo",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "الحزب القومي السوري الاجتماعي",
+          "Current political affiliation category": "Baath Ally",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أنيسة عبود",
+          Gender: "female",
+          "Year of birth": "1957",
+          "Governorate of birth": "Latakia",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "أديبة وباحثة زراعية /Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "أيهم عبد الرحمن الحوراني",
+          Gender: "male",
+          "Year of birth": "1965",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو قيادة فرع حزب بعث /Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "بشير سليمان الحلبوني",
+          Gender: "male",
+          "Year of birth": "1963",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عضو مكتب تنفيذي في الاتحاد العام لنقابات العمال",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "تركي عزيز حسن",
+          Gender: "male",
+          "Year of birth": "1963",
+          "Governorate of birth": "Hama",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "عميد متقاعد وباحث في مركز مداد",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "جازيه الشيخ علي",
+          Gender: "female",
+          "Year of birth": "1965",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "عضو قيادة فرع حزب البعث في بالحسكة",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "جانسيت قازان",
+          Gender: "female",
+          "Year of birth": "1957",
+          "Governorate of birth": "Quneitra",
+          Religion: "Sunni",
+          Ethicity: "Circassian",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "NGO (رئيس مؤسسسة سوريون)عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "جمال القادري",
+          Gender: "male",
+          "Year of birth": "1961",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس اتحاد العام لنقابات العمال/ عضو مجلس شعب",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "جميلة مسلم الشربجي",
+          Gender: "female",
+          "Year of birth": "1972",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "عضو المحكمة الدستورية العليا",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "حسن عبد الله الأطرش",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو قيادة فرع حزب البعث في السويداء",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "حسين فوزي فرحو",
+          Gender: "male",
+          "Year of birth": "1966",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "قاضي",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "خالد موسى العبود",
+          Gender: "male",
+          "Year of birth": "1963",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو مجلس شعب",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "حزب الوحدويين الاشتراكيين",
+          "Current political affiliation category": "Baath Ally",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "خالد خزعل خزعل",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "Quneitra",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "نائب رئيس الاتحاد العام للفلاحين",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "دارين عبد السلام سليمان",
+          Gender: "female",
+          "Year of birth": "1980",
+          "Governorate of birth": "Tartus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "رئيس الاتحاد الوطني لطلبة سورية",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "رائدة ياسين وقاف",
+          Gender: "female",
+          "Year of birth": "1967",
+          "Governorate of birth": "Tartus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "Public sector employee موظف عام",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "رضوان إبراهيم مصطفى",
+          Gender: "male",
+          "Year of birth": "1957",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "أمين فرع ريف دمشق لحزب البعث العربي الاشتراكي",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "رياض علي طاووز",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "عضو مجلس شعب سابق",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "ريمون صبرة هلال",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "رئيس جمعية خطوة للأطراف الصناعية/ عضو مجلس الشعب",
+          "Occupation category": "NGO",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "زياد عبد الرحيم هزاع",
+          Gender: "male",
+          "Year of birth": "1964",
+          "Governorate of birth": "Quneitra",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "المدير العام للمؤسسة السورية للمخابز",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "سعيد عبد الواحد نحيلي",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Homs",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "عضو المحكمة الدستورية العليا",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "شيرين عبد العزيز اليوسف",
+          Gender: "female",
+          "Year of birth": "1977",
+          "Governorate of birth": "Idlib",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عضو مجلس شعب",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "صفوان محمد قربي",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Idlib",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو مجلس شعب",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "طالب محمد قاضي أمين",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس جمعية بإخلاص سورية ومعاون سابق لوزير الإعلام",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "طريف قوطرش",
+          Gender: "male",
+          "Year of birth": "1963",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس مجلس أمناء الأولمبياد السوري",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "عبد القادر عزوز",
+          Gender: "male",
+          "Year of birth": "1978",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "مستشار لدى رئاسة مجلس الوزراء السوري",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "عبد القادر قبلان",
+          Gender: "male",
+          "Year of birth": "1979",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "عبد الله السيد",
+          Gender: "male",
+          "Year of birth": "1983",
+          "Governorate of birth": "Tartus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس الفريق الديني الشبابي ومدير أوقاف طرطوس",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "عيسى مد الله المخول",
+          Gender: "male",
+          "Year of birth": "1978",
+          "Governorate of birth": "Damascus",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "أكاديمي/ Public sector employee موظف عام",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "غسان سليمان عباس",
+          Gender: "male",
+          "Year of birth": "1958",
+          "Governorate of birth": "Hama",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "السفير السوري في الامارات",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "فهد أحمد العدوي",
+          Gender: "male",
+          "Year of birth": "1969",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد أكرم العجلاني",
+          Gender: "male",
+          "Year of birth": "1954",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو مجلس الشعب /Businessman رجل أعمال",
+          "Occupation category": "Businessman",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد براء قاطرجي",
+          Gender: "male",
+          "Year of birth": "1976",
+          "Governorate of birth": "Raqqa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "Businessman رجل أعمال",
+          "Occupation category": "Businessman",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد خير أحمد العكام",
+          Gender: "male",
+          "Year of birth": "1967",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "عضو مجلس الشعب/Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد خير فارس كنيهر",
+          Gender: "male",
+          "Year of birth": "1967",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد عصام أحمد هزيمة",
+          Gender: "male",
+          "Year of birth": "",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Public sector employee موظف عام",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد علاء محمد محجوب التيناوي",
+          Gender: "male",
+          "Year of birth": "1972",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "قاضي",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد ماهر عبد الله العلبي",
+          Gender: "male",
+          "Year of birth": "1958",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "قاضي",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "محمد ماهر قباقيبي",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: 'رئيس "جامعة دمشق"',
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "مهى محمد علي العجيلي",
+          Gender: "female",
+          "Year of birth": "1969",
+          "Governorate of birth": "Raqqa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو مجلس شعب",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "موسى اليان عبد النور",
+          Gender: "male",
+          "Year of birth": "1971",
+          "Governorate of birth": "Homs",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس اتحاد الصحفيين",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "موعد ناصر",
+          Gender: "male",
+          "Year of birth": "1953",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عميد متقاعد",
+          "Occupation category": "Public sector employee",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "نزار علي سكيف",
+          Gender: "male",
+          "Year of birth": "1958",
+          "Governorate of birth": "Latakia",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "نقيب المحامين في سورية",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "نزار صادق صدقني",
+          Gender: "male",
+          "Year of birth": "1975",
+          "Governorate of birth": "Latakia",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation:
+            "قاضي/ Public sector employee موظف عام (معاون وزير العدل)",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "نور أمارديروس أريسيان",
+          Gender: "female",
+          "Year of birth": "1967",
+          "Governorate of birth": "Damascus",
+          Religion: "Armenian Christian",
+          Ethicity: "Armenian",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "عضو مجلس الشعب",
+          "Occupation category": "Other",
+          "Political block": "Government",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "هيثم حسن الطاس",
+          Gender: "male",
+          "Year of birth": "1973",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "عميد كلية الحقوق في جامعة دمشق/Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Government",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "إبراهيم فواز الجباوي",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "مسؤول المكتب الإعلامي في هئية التفاوض السورية",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "ادوار حشوة",
+          Gender: "male",
+          "Year of birth": "1935",
+          "Governorate of birth": "Homs",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "حركة الاشتراكيين العرب",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "أحمد الأحمر",
+          Gender: "male",
+          "Year of birth": "1945",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "منصة القاهرة",
+          "Current political affiliation category": "Cairo Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "أحمد العسراوي",
+          Gender: "male",
+          "Year of birth": "1951",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "الأمين العام لحزب الاتحاد الاشتراكي العربي الديمقراطي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "الاتحاد الاشتراكي العربي الديموقراطي/ هيئة التنسيق الوطنية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "أحمد خضر",
+          Gender: "male",
+          "Year of birth": "1965",
+          "Governorate of birth": "Deir ez-Zor",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس وفد المعارضة السورية إلى محادثات أستانة",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "أليس مفرج",
+          Gender: "female",
+          "Year of birth": "1971",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "مسؤولة ملف المعتقلين في هيئة التفاوض",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "حزب العمل الشيوعي/هيئة التنسيق الوطنية",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "أنس العبدة",
+          Gender: "male",
+          "Year of birth": "1967",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "رئيس للهيئة العليا للمفاوضات السورية",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "بدر جاموس",
+          Gender: "male",
+          "Year of birth": "1968",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "Other آخرون",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "التيار الوطني السوري/ National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "بسمة قضماني",
+          Gender: "female",
+          "Year of birth": "1958",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "بشار الحاج علي",
+          Gender: "male",
+          "Year of birth": "1972",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "دبلوماسي سابق",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "بشار الزعبي",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "Other آخرون",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "حسن الحريري",
+          Gender: "male",
+          "Year of birth": "",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "",
+          "Occupation category": "",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "حسن عبيد",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "قاضي منشق",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "ديما موسى",
+          Gender: "female",
+          "Year of birth": "1978",
+          "Governorate of birth": "Homs",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "مستقل/National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "رياض حسن",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Deir ez-Zor",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "",
+          "Occupation category": "",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "كتلة المجالس المحلية/ National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "سامي بيتنجانه",
+          Gender: "male",
+          "Year of birth": "1974",
+          "Governorate of birth": "Damascus",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "تاجر",
+          "Occupation category": "Businessman",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Moscow Platform منصة موسكو-",
+          "Current political affiliation category": "Moscow Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "صفوان عكاش",
+          Gender: "male",
+          "Year of birth": "1954",
+          "Governorate of birth": "Hama",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "حزب العمل الشيوعي/هيئة التنسيق الوطنية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "طارق الكردي",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "مدير المكتب الوطني للتوثيق",
+          "Current political affiliation category": "unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "عبد الحكيم بشار",
+          Gender: "male",
+          "Year of birth": "1958",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "المجلس الوطني الكردي/ الحزب الديمقراطي الكردستاني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "عبدالأحد اسطيفو",
+          Gender: "male",
+          "Year of birth": "1957",
+          "Governorate of birth": "Hasaka",
+          Religion: "Christian",
+          Ethicity: "Assyrian",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "المنظمة الآشورية الديمقراطية",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "عبدالباسط عبد اللطيف",
+          Gender: "male",
+          "Year of birth": "1963",
+          "Governorate of birth": "Deir ez-Zor",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "عميد منشق",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "كتلة الفصائل/ National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "عبد المجيد بركات",
+          Gender: "male",
+          "Year of birth": "1987",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Turkmen",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "Other آخرون",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "المجلس التركماني السوري/ National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "عروب المصري",
+          Gender: "female",
+          "Year of birth": "",
+          "Governorate of birth": "Damascus",
+          Religion: "",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "منصة موسكو/ حزب الإرادة الشعبية",
+          "Current political affiliation category": "Moscow Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "عشتار محمود",
+          Gender: "female",
+          "Year of birth": "1980",
+          "Governorate of birth": "",
+          Religion: "",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "عضو المجلس المركزي في حزب الإرادة الشعبية - منصة موسكو",
+          "Current political affiliation category": "Moscow Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "عمار النحاس",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "منصة القاهرة",
+          "Current political affiliation category": "Cairo Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "عوض العلي",
+          Gender: "male",
+          "Year of birth": "1953",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عميد منشق",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "فراس الخالدي",
+          Gender: "male",
+          "Year of birth": "1976",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس منصة القاهرة",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "تيار الغد السوري",
+          "Current political affiliation category": "Cairo Platform",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "قاسم الدرويش",
+          Gender: "male",
+          "Year of birth": "",
+          "Governorate of birth": "Raqqa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "تيار الغد السوري",
+          "Current political affiliation category": "Cairo Platform",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "كاميران حاجو",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "المجلس الوطني الكردي/ الحزب الديمقراطي الكردستاني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "كبرييل كوريه",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Hasaka",
+          Religion: "Christian",
+          Ethicity: "Syriac",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "المنظمة الآشورية الديمقراطية",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "محمد السعدي",
+          Gender: "male",
+          "Year of birth": "1970",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation:
+            "سياسي/ ورئيس مكتب الشؤون الاجتماعية في هيئة التنسيق الوطنية",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "هيئة التنسيق الوطنية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "محمد نوري أحمد",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Turkmen",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "Other آخرون",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "",
+        },
+        {
+          Name: "محمد جمال سليمان",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Damascus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "ممثل",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "منصة القاهرة",
+          "Current political affiliation category": "Cairo Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "محمد رشيد",
+          Gender: "male",
+          "Year of birth": "1972",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "حزب الاتحاد الشعبي الكردي في سورية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "محمد علي صايغ",
+          Gender: "male",
+          "Year of birth": "1956",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "الاتحاد الاشتراكي العربي الديمقراطي/ هيئة التنسيق الوطنية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "محمد ياسر دلوان",
+          Gender: "male",
+          "Year of birth": "1979",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "تاجر سابقاً/عضو المكتب السياسي لجيش الإسلام",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "فصائل المعارضة/ جيش الإسلام",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "محمود برهان عطور",
+          Gender: "male",
+          "Year of birth": "1955",
+          "Governorate of birth": "Latakia",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "مرح البقاعي",
+          Gender: "female",
+          "Year of birth": "1959",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "رئيس الحزب الجمهوري السوري/Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "الحزب الجمهوري السوري",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "مهند دليقان",
+          Gender: "male",
+          "Year of birth": "1987",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "حزب الإرادة الشعبية /Moscow Platform منصة موسكو",
+          "Current political affiliation category": "Moscow Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "نبراس الفاضل",
+          Gender: "male",
+          "Year of birth": "1967",
+          "Governorate of birth": "Tartus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "رجل أعمال",
+          "Occupation category": "Businessman",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "هادي البحرة",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس مشترك في اللجنة الدستورية",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "هشام ابراهيم مروة",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "رئيس اللجنة القانونية للائتلاف",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "الكتلة الوطنية المؤسسة/ National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "هنادي أبو عرب",
+          Gender: "female",
+          "Year of birth": "1976",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "قاضي منشق",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "هيثم محمود رحمة",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "Homs",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation":
+            "تيار المستقبل/ National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني/ فيلق الشام",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "ياسر عبد الكريم الخميس",
+          Gender: "male",
+          "Year of birth": "1968",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation:
+            "باحث في مركز الدراسات والبحوث بجامعة نايف العربية للعلوم",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "ياسر الفرحان",
+          Gender: "male",
+          "Year of birth": "1971",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عضو في الهيئة الوطنية لشؤون المفقودين والمعتقلين",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "الحراك الثوري / National Coalition for Syrian Revolutionary and Opposition Forces الائتلاف الوطني",
+          "Current political affiliation category":
+            "National Coalition for Syrian Revolutionary and Opposition Forces",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "يحيى العريضي",
+          Gender: "male",
+          "Year of birth": "1954",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation:
+            'رئيس المكتب الإعلامي في "الهيئة العليا للتفاوض/Academic أكاديمي',
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "هيئة التفاوض الوطنية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "يحيى عزيز",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "هيئة التنسيق الوطنية/ الحزب الديمقراطي الاجتماعي",
+          "Current political affiliation category": "Moscow Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "يوسف سلمان",
+          Gender: "male",
+          "Year of birth": "1955",
+          "Governorate of birth": "Latakia",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "أعمال حرة",
+          "Occupation category": "Other",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation":
+            "الحزب الديمقراطي الاجتماعي/ Moscow Platform منصة موسكو",
+          "Current political affiliation category": "Moscow Platform",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "يوسف قدوره",
+          Gender: "male",
+          "Year of birth": "1971",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "خبير قانوني بمركز جسور للدراسات /academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Opposition",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "ابراهيم الدراجي",
+          Gender: "male",
+          "Year of birth": "1972",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "خبير قانوني",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "انس زريع",
+          Gender: "male",
+          "Year of birth": "1988",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو مجلس شعب سابق وخطيب جامع الفردوس",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "انصاف حمد",
+          Gender: "female",
+          "Year of birth": "1965",
+          "Governorate of birth": "Latakia",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "مركز دمشق للأبحاث والدراسات/Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "انعام ابراهيم نيوف",
+          Gender: "female",
+          "Year of birth": "1974",
+          "Governorate of birth": "Tartus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation:
+            "منسقة في مجلس المرأة السورية/Public sector employee موظف عام",
+          "Occupation category": "Public sector employee",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "إيلاف ياسين",
+          Gender: "female",
+          "Year of birth": "1980",
+          "Governorate of birth": "Raqqa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "صحفية",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "إيمان شحود",
+          Gender: "female",
+          "Year of birth": "1970",
+          "Governorate of birth": "Idlib",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "قاضي منشق/ مساعد مدرس في هاناسكوج في السويد",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "أحمد طالب الكردي",
+          Gender: "male",
+          "Year of birth": "1936",
+          "Governorate of birth": "Hama",
+          Religion: "Other Muslim",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "طبيب جراح",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "جافيا عمر علي",
+          Gender: "female",
+          "Year of birth": "1980",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "NGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "جمانة جهاد قدور",
+          Gender: "female",
+          "Year of birth": "1986",
+          "Governorate of birth": "Homs",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "\r\nAcademic أكاديمي\r\n",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "حازم فصيح العشي",
+          Gender: "male",
+          "Year of birth": "1980",
+          "Governorate of birth": "Hama",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "الحزب السوري القومي الاجتماعي",
+          "Current political affiliation category": "Baath Ally",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "حلا نعوم نهمة",
+          Gender: "female",
+          "Year of birth": "",
+          "Governorate of birth": "",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "",
+          "Studied law?": "",
+          Occupation: "",
+          "Occupation category": "",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "",
+        },
+        {
+          Name: "خالد عدوان الحلو",
+          Gender: "male",
+          "Year of birth": "1975",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation:
+            "معاون وزير العدل في الحكومة السورية المؤقتة سابقاً/ قاضي منشق",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "حميدي دهام الجربا",
+          Gender: "male",
+          "Year of birth": "1942",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Secondary school or below",
+          "Studied law?": "No",
+          Occupation: "شيخ عشيرة شمر/ الرئيس المشترك للإدارة الذاتية",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "دورسين حسين أوسكان",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Hasaka",
+          Religion: "Sunni",
+          Ethicity: "Kurdish",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "أكاديمي ولديه ولدين يعملان محاميان في السويد",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "ربا عبد المسيح ميرزا",
+          Gender: "female",
+          "Year of birth": "1963",
+          "Governorate of birth": "Damascus",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "NGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "رشا يونس الحلح",
+          Gender: "female",
+          "Year of birth": "1982",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "رغداء زيدان",
+          Gender: "female",
+          "Year of birth": "1970",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "إخصائية اجتماعية / Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "رولا الركبي",
+          Gender: "female",
+          "Year of birth": "1968",
+          "Governorate of birth": "hama",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "nGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "رئيفة سميع",
+          Gender: "female",
+          "Year of birth": "1970",
+          "Governorate of birth": "Idlib",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "NGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "سليمان القرفان",
+          Gender: "male",
+          "Year of birth": "1971",
+          "Governorate of birth": "Daraa",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "",
+        },
+        {
+          Name: "سمر الديوب",
+          Gender: "female",
+          "Year of birth": "1969",
+          "Governorate of birth": "Homs",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "سمير مسعد",
+          Gender: "male",
+          "Year of birth": "1967",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "السكرتير الأول في السفارة السورية في التشيك",
+          "Occupation category": "Public sector employee",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "سميرة مبيض",
+          Gender: "female",
+          "Year of birth": "1976",
+          "Governorate of birth": "Damascus",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "nGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "سومر صالح",
+          Gender: "male",
+          "Year of birth": "1987",
+          "Governorate of birth": "Tartus",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "صابر بلول",
+          Gender: "male",
+          "Year of birth": "1959",
+          "Governorate of birth": "Homs",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "صباح الحلاق",
+          Gender: "female",
+          "Year of birth": "1959",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عضو رابطة النساء السوريات",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "الحزب الشيوعي",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "سونيا محمد سعيد الحلبي.",
+          Gender: "female",
+          "Year of birth": "",
+          "Governorate of birth": "Idlib",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "طبيبة اطفال",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "عبد الأحد سمعان خاجو",
+          Gender: "male",
+          "Year of birth": "1953",
+          "Governorate of birth": "Hasaka",
+          Religion: "Christian",
+          Ethicity: "Syriac",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "lower",
+          "Occupation category": "Lawer",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "",
+        },
+        {
+          Name: "عبد الرزاق شيخ عيسى",
+          Gender: "male",
+          "Year of birth": "1955",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "عبود السراج",
+          Gender: "male",
+          "Year of birth": "1936",
+          "Governorate of birth": "Deir ez-Zor",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "عصام التكروري",
+          Gender: "male",
+          "Year of birth": "1969",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "عصام الزيبق",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "رئيس اتحاد الحرفيين في دمشق/ قيادي في الدفاع الوطني",
+          "Occupation category": "Public sector employee",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "علي عباس",
+          Gender: "male",
+          "Year of birth": "1982",
+          "Governorate of birth": "Hama",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Pro-Assad",
+        },
+        {
+          Name: "عمر عبد العزيز الحلاج",
+          Gender: "male",
+          "Year of birth": "1966",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "مستشار تنموي",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "غنى بديوي",
+          Gender: "female",
+          "Year of birth": "1981",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "فائق حويجة",
+          Gender: "male",
+          "Year of birth": "1960",
+          "Governorate of birth": "hama",
+          Religion: "Other Muslim",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "nGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "فدوى محمود",
+          Gender: "female",
+          "Year of birth": "1954",
+          "Governorate of birth": "Latakia",
+          Religion: "Alawite",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "NGO عامل في منظمة مجتمع مدني زوجها عبد العزيز الخير",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "حزب العمل الشيوعي",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "مازن غريبه",
+          Gender: "male",
+          "Year of birth": "1983",
+          "Governorate of birth": "Homs",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "nGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "ماهر ملندي",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "Baath Party حزب البعث",
+          "Current political affiliation category": "Baath Party",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "محمد أنور مجني",
+          Gender: "male",
+          "Year of birth": "1974",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "قاضي منشق",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "محمد خير ايوب",
+          Gender: "male",
+          "Year of birth": "1967",
+          "Governorate of birth": "Aleppo",
+          Religion: "Sunni",
+          Ethicity: "Turkmen",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "nGO عامل في منظمة مجتمع مدني",
+          "Occupation category": "NGO",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "حركة نداء سورية",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "محمد مسلم حوا",
+          Gender: "male",
+          "Year of birth": "",
+          "Governorate of birth": "Damascus",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "No",
+          Occupation: "رجل أعمال",
+          "Occupation category": "Businessman",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "",
+        },
+        {
+          Name: "ممدوح الطحان",
+          Gender: "male",
+          "Year of birth": "",
+          "Governorate of birth": "Quneitra",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "سياسي",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "عضو الكتلة الوطنية المؤسسة في مصر",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "منى اسبيرو سلوم",
+          Gender: "female",
+          "Year of birth": "",
+          "Governorate of birth": "",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "عضو في التحالف النسوي السوري",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "منى خيتي",
+          Gender: "female",
+          "Year of birth": "1983",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "No",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation:
+            "مؤسسة معهد التكنولوجيا الطبي بالغوطة المحاصرة وعضو فريق ملهم الطوعي",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "منى فضل الله عبيد",
+          Gender: "female",
+          "Year of birth": "",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "طبيبة عامة",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Opposition-leaning",
+        },
+        {
+          Name: "موسى خليل متري",
+          Gender: "male",
+          "Year of birth": "1962",
+          "Governorate of birth": "Rif Dimashq",
+          Religion: "Christian",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "ميس نايف الكريدي",
+          Gender: "female",
+          "Year of birth": "1970",
+          "Governorate of birth": "As-Suwayda",
+          Religion: "Druze",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "No",
+          Occupation: "كاتبة",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "Yes",
+          "Current political affiliation": "هيئة العمل الوطني/ كاتبة",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Regime-leaning",
+        },
+        {
+          Name: "هدى سرجاوي",
+          Gender: "female",
+          "Year of birth": "1982",
+          "Governorate of birth": "Idlib",
+          Religion: "Sunni",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Universtidy degree or diploma",
+          "Studied law?": "Yes",
+          Occupation: "عضو مؤسس في تجمع المرأة السورية",
+          "Occupation category": "Other",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "Independent",
+          "Current political affiliation category": "Independent",
+          "Perceived closeness to the regime": "Opposition",
+        },
+        {
+          Name: "هيثم موسى حسن",
+          Gender: "male",
+          "Year of birth": "",
+          "Governorate of birth": "",
+          Religion: "",
+          Ethicity: "Arab",
+          "Resides in Syria?": "Yes",
+          "Educational attainment": "Post-graduate (Masters or PhD)",
+          "Studied law?": "Yes",
+          Occupation: "Academic أكاديمي",
+          "Occupation category": "Academic",
+          "Political block": "Middle Third",
+          "Member of the Small Body?": "No",
+          "Current political affiliation": "",
+          "Current political affiliation category": "Unknown",
+          "Perceived closeness to the regime": "",
+        },
+      ];
+
+      var idx = 0;
+      data.forEach(function (v) {
+        v["id"] = idx;
+        idx += 1;
+        if (v["Governorate of birth"] == "") {
+          v["Governorate of birth"] = "Unknown";
+        }
+        if (v["Religion"] == "") {
+          v["Religion"] = "Unknown";
+        }
+        if (v["Educational attainment"] == "") {
+          v["Educational attainment"] = "Unknown";
+        }
+        if (v["Studied law?"] == "") {
+          v["Studied law?"] = "Unknown";
+        }
+        if (v["Occupation category"] == "") {
+          v["Occupation category"] = "Unknown";
+        }
+        if (v["Perceived closeness to the regime"] == "") {
+          v["Perceived closeness to the regime"] = "Unknown";
+        }
+        if (v["Year of birth"] != "") {
+          var age_milliseconds = new Date() - new Date(v["Year of birth"]);
+          var age_years = Math.round(age_milliseconds / 31536000000);
+          v["age"] = age_years;
+        } else {
+          v["age"] = "";
+        }
+      });
+
+      console.log(data);
+
+      function responsivefy(svg) {
+        // get container + svg aspect ratio
+        var container = d3.select(svg.node().parentNode),
+          width = parseInt(svg.style("width")),
+          height = parseInt(svg.style("height")),
+          aspect = width / height;
+
+        // add viewBox and preserveAspectRatio properties,
+        // and call resize so that svg resizes on inital page load
+        svg
+          .attr("viewBox", "0 0 " + width + " " + height)
+          .attr("perserveAspectRatio", "xMinYMid")
+          .call(resize);
+
+        // to register multiple listeners for same event type,
+        // you need to add namespace, i.e., 'click.foo'
+        // necessary if you call invoke this function for multiple svgs
+        // api docs: https://github.com/mbostock/d3/wiki/Selections#on
+
+        d3.select(window).on("resize." + container.attr("id"), resize);
+
+        // get width of container and resize svg to fit it
+        function resize() {
+          svg.attr("width", targetWidth);
+          svg.attr("height", Math.round(targetWidth / aspect));
+        }
+      }
+      var w = window.innerWidth;
+
+      svg = d3
+        .select(".chart")
+        .append("svg")
+        .attr("width", initialWidth + margin.left + margin.right)
+        .attr("height", initialHeight + margin.top + margin.bottom)
+        .call(responsivefy);
+
+      g = svg
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      //svg
+
+      if (w < 550) {
+        mobile = 1;
+      }
+
+      const filters = Object.keys(data[0]).slice(1);
+
+      const age_order = [
+        "20-",
+        "21-30",
+        "31-40",
+        "41-50",
+        "51-60",
+        "61-70",
+        "70+",
+      ];
+
+      var ageThreshold = d3
+        .scaleThreshold()
+        .domain([20, 30, 40, 50, 60, 70])
+        .range(age_order);
+
+      data.forEach(function (v) {
+        if (v.age == "") {
+          v.age_processed = "Unknown";
+        } else {
+          v.age_processed = ageThreshold(v.age);
+        }
+      });
+
+      const gender_order = d3
+        .nest()
+        .key(function (d) {
+          return d.Gender;
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const governate_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Governorate of birth"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const religion_order = d3
+        .nest()
+        .key(function (d) {
+          return d.Religion;
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const ethnicity_order = d3
+        .nest()
+        .key(function (d) {
+          return d.Ethicity;
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const resides_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Resides in Syria?"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const educational_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Educational attainment"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const studied_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Studied law?"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const occupation_category_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Occupation category"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const block_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Political block"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const small_body_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Member of the Small Body?"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const affiliation_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Current political affiliation category"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const closeness_order = d3
+        .nest()
+        .key(function (d) {
+          return d["Perceived closeness to the regime"];
+        })
+        .sortKeys(function (a, b) {
+          return d3.ascending(a, b);
+        })
+        .entries(data)
+        .map(function (v) {
+          return v.key;
+        });
+
+      const colors = [
+        "#90CCD0",
+        "#FDB833",
+        "#1D3461",
+        "#DE1B1B",
+        "#80475E",
+        "#D86904",
+        "#086788",
+        "#91140C",
+        "#393E41",
+        "#226F54",
+        "#FED686",
+        "#FCB573",
+        "#F37168",
+        "#B77B93",
+        "#91ABDE",
+        "#92DDC4",
+        "#BEC3C6",
+        "#7A8B99",
+        "#634B66",
+      ];
+
+      d3.select(".filter-container")
+        .selectAll(".filters")
+        .data(
+          filters
+            .filter(function (v) {
+              return v != "Year of birth";
+            })
+            .filter(function (v) {
+              return v != "Occupation";
+            })
+            .filter(function (v) {
+              return v != "Current political affiliation";
+            })
+            .filter(function (v) {
+              return v != "id";
+            })
+        )
+        .enter()
+        .append("div")
+        .attr("class", "filters")
+        .style("background-color", function (d, i) {
+          if (d == "Political block") {
+            return "#f4eddc";
+          } else {
+            return "#fff";
+          }
+        })
+        .html(function (d) {
+          var filter_string = d.replace(/_/g, " ").replace(/prev/g, "Previous");
+          return (
+            filter_string.slice(0, 1).toUpperCase() + filter_string.slice(1)
+          );
+        })
+        .on("click", function (d) {
+          if (type != d) {
+            type = d;
+            d3.selectAll(".filters").style("background-color", function (v) {
+              if (v == type) {
+                return "#f4eddc";
+              } else {
+                return "#fff";
+              }
+            });
+            move_positions();
+            create_legend();
+          }
+        });
+
+      var age_scale = d3.scaleOrdinal().domain(age_order).range(colors);
+
+      var gender_scale = d3.scaleOrdinal().domain(gender_order).range(colors);
+
+      var governate_scale = d3
+        .scaleOrdinal()
+        .domain(governate_order)
+        .range(colors);
+
+      var religion_scale = d3
+        .scaleOrdinal()
+        .domain(religion_order)
+        .range(colors);
+
+      var ethnicity_scale = d3
+        .scaleOrdinal()
+        .domain(ethnicity_order)
+        .range(colors);
+
+      var resides_scale = d3.scaleOrdinal().domain(resides_order).range(colors);
+
+      var educational_scale = d3
+        .scaleOrdinal()
+        .domain(educational_order)
+        .range(colors);
+
+      var studied_scale = d3.scaleOrdinal().domain(studied_order).range(colors);
+
+      var occupation_category_scale = d3
+        .scaleOrdinal()
+        .domain(occupation_category_order)
+        .range(colors);
+
+      var block_scale = d3.scaleOrdinal().domain(block_order).range(colors);
+
+      var small_body_scale = d3
+        .scaleOrdinal()
+        .domain(small_body_order)
+        .range(colors);
+
+      var affiliation_scale = d3
+        .scaleOrdinal()
+        .domain(affiliation_order)
+        .range(colors);
+
+      var closeness_scale = d3
+        .scaleOrdinal()
+        .domain(closeness_order)
+        .range(colors);
+
+      const animation_duration = 1000;
+
+      // new calcs:
+      const viz_height = initialHeight - 40 - margin.bottom;
+      const viz_width = initialWidth - margin.left - margin.right;
+      console.log("viz_height", viz_height);
+      console.log("viz_width", viz_width);
+      // area = height * width
+      var area = viz_height * viz_width;
+      var n = data.length;
+      var area_per_node = (area / n).toFixed(2);
+      const padding_radius_ratio = 3 / 5;
+      var total_radius_height = Math.sqrt(area_per_node / Math.PI);
+      var radius = (padding_radius_ratio * total_radius_height).toFixed(2);
+      var padding = (total_radius_height - radius).toFixed(2);
+      var row_n = Math.ceil(viz_height / (2 * total_radius_height));
+      var column_n = n / row_n;
+      var total_radius_width = viz_width / column_n / 2;
+      console.log("area_per_node", area_per_node);
+      console.log("total_radius_height", total_radius_height);
+      console.log("total_radius_width", total_radius_width);
+      console.log("radius", radius);
+      console.log("padding", padding);
+      console.log("row_n", row_n);
+      console.log("column_n", column_n);
+
+      console.log(
+        "row_n * total_radius_height",
+        row_n * 2 * total_radius_height
+      );
+
+      console.log(
+        "column_n * total_radius_height",
+        column_n * 2 * total_radius_height
+      );
+
+      init();
+
+      /*g.append("text")
+          .attr("class", "chart-title")
+          .attr("x", -290)
+          .attr("y", -300)
+          .text("Chart Title");*/
+
+      // create legend
+      var legendRectSize = 14;
+      var legendSpacing = 180;
+
+      g.append("text")
+        .attr("class", "legend-title")
+        .attr("x", 0)
+        .attr("y", 0)
+        .text("Legend:");
+
+      create_legend();
+
+      // first tooltip on:
+      d3.select(".nodes").dispatch("mouseover");
+
+      function create_legend() {
+        var legend_data, color_scale;
+        if (legend) {
+          legend.remove();
+        }
+        if (type == "age") {
+          legend_data = [...age_order];
+          legend_data.unshift("Unknown");
+          color_scale = age_scale;
+        }
+        if (type == "Gender") {
+          legend_data = gender_order;
+          color_scale = gender_scale;
+        }
+        if (type == "Governorate of birth") {
+          legend_data = governate_order;
+          color_scale = governate_scale;
+        }
+        if (type == "Religion") {
+          legend_data = religion_order;
+          color_scale = religion_scale;
+        }
+        if (type == "Ethicity") {
+          legend_data = ethnicity_order;
+          color_scale = ethnicity_scale;
+        }
+        if (type == "Resides in Syria?") {
+          legend_data = resides_order;
+          color_scale = resides_scale;
+        }
+        if (type == "Educational attainment") {
+          legend_data = educational_order;
+          color_scale = educational_scale;
+        }
+        if (type == "Studied law?") {
+          legend_data = studied_order;
+          color_scale = studied_scale;
+        }
+        if (type == "Occupation category") {
+          legend_data = occupation_category_order;
+          color_scale = occupation_category_scale;
+        }
+        if (type == "Political block") {
+          legend_data = block_order;
+          color_scale = block_scale;
+        }
+        if (type == "Member of the Small Body?") {
+          legend_data = small_body_order;
+          color_scale = small_body_scale;
+        }
+        if (type == "Current political affiliation category") {
+          legend_data = affiliation_order;
+          color_scale = affiliation_scale;
+        }
+        if (type == "Perceived closeness to the regime") {
+          legend_data = closeness_order;
+          color_scale = closeness_scale;
+        }
+
+        legend = g
+          .selectAll(".legend")
+          .data(legend_data)
+          .enter()
+          .append("g")
+          .attr("class", "legend")
+          .attr("transform", function (d, i) {
+            var height = legendRectSize + legendSpacing;
+            var offset = 1;
+            var horz = i * height + offset;
+            var vert = 10;
+            console.log(horz);
+            if (i > 6) {
+              horz -= 7 * height;
+              vert += 20;
+            }
+            if (i > 13) {
+              horz -= 7 * height;
+              vert += 20;
+            }
+            return "translate(" + horz + "," + vert + ")";
+          });
+
+        legend
+          .append("rect")
+          .attr("x", 0)
+          .attr("y", 2)
+          .attr("width", legendRectSize)
+          .attr("height", legendRectSize)
+          .style("stroke", "black")
+          .style("stroke-width", 1)
+          .attr("fill", function (d) {
+            if (type == "age" && d == "Unknown") {
+              return "#99D17B";
+            } else {
+              return color_scale(d);
+            }
+          });
+
+        legend
+          .append("text")
+          .attr("class", "legend-label")
+          .attr("dx", legendRectSize + 7)
+          .attr("dy", "1.1em")
+          .html(function (d) {
+            if (d.length > 20) {
+              return d.substr(0, 17) + "..." + get_percentage(d);
+            } else {
+              return d + get_percentage(d);
+            }
+          });
+      }
+
+      function get_percentage(label) {
+        var value;
+
+        total = d3
+          .nest()
+          .key(function (d) {
+            if (type != "age") {
+              return d[type];
+            } else {
+              return d["age_processed"];
+            }
+          })
+          .entries(data);
+
+        total.forEach(function (v) {
+          if (v.key == label) {
+            value = ((v.values.length * 100) / n).toFixed(1);
+          }
+        });
+        if (value != null) {
+          return (
+            " <tspan class='legend-label-percentage'>(" + value + "%)</tspan>"
+          );
+        } else {
+          return " <tspan class='legend-label-percentage'>(0%)</tspan>";
+        }
+      }
+
+      function populate_dropdown() {
+        var processed_data = [];
+
+        data
+          .sort(function (a, b) {
+            return d3.ascending(a["Political block"], b["Political block"]);
+          })
+          .forEach(function (v) {
+            if (processed_data.indexOf(v["Political block"]) < 0) {
+              processed_data.push(v["Political block"]);
+            }
+            processed_data.push(v);
+          });
+
+        d3.select("#member-selector").selectAll("a").remove();
+
+        var memberSelector = d3
+          .select("#member-selector")
+          .selectAll("a")
+          .data(processed_data)
+          .enter()
+          .append("text")
+          .html(function (d, i) {
+            if (typeof d != "string") {
+              return "<a href='#'>" + d.Name + "</a>";
+            } else {
+              return "<a class='sub-header' href='#'>" + d + "</a>";
+            }
+          })
+          .on("click", function (d, i) {
+            if (typeof d != "string") {
+              d3.select("#node-" + d.id).dispatch("mouseover");
+            }
+          });
+      }
+
+      function move_positions() {
+        var sorted_data = sort_data(data);
+        console.log("sorted_data", sorted_data);
+        get_positions_new(sorted_data);
+
+        g.selectAll(".nodes")
+          .transition()
+          .duration(animation_duration)
+          .attr("cx", function (d) {
+            return d.x;
+          })
+          .attr("cy", function (d) {
+            return d.y;
+          })
+          .attr("fill", function (d) {
+            if (type == "Gender") {
+              return gender_scale(d.Gender);
+            } else {
+              if (type == "Governorate of birth") {
+                return governate_scale(d["Governorate of birth"]);
+              } else {
+                if (type == "Religion") {
+                  return religion_scale(d.Religion);
+                } else {
+                  if (type == "Ethicity") {
+                    return ethnicity_scale(d.Ethicity);
+                  } else {
+                    if (type == "Resides in Syria?") {
+                      return resides_scale(d["Resides in Syria?"]);
+                    } else {
+                      if (type == "Educational attainment") {
+                        return educational_scale(d["Educational attainment"]);
+                      } else {
+                        if (type == "Studied law?") {
+                          return studied_scale(d["Studied law?"]);
+                        } else {
+                          if (type == "Occupation category") {
+                            return occupation_category_scale(
+                              d["Occupation category"]
+                            );
+                          } else {
+                            if (type == "Political block") {
+                              return block_scale(d["Political block"]);
+                            } else {
+                              if (type == "age") {
+                                if (d.age_processed != "Unknown") {
+                                  return age_scale(d.age_processed);
+                                } else {
+                                  return "#99D17B";
+                                }
+                              } else {
+                                if (type == "Member of the Small Body?") {
+                                  return small_body_scale(
+                                    d["Member of the Small Body?"]
+                                  );
+                                } else {
+                                  if (
+                                    type ==
+                                    "Current political affiliation category"
+                                  ) {
+                                    return affiliation_scale(
+                                      d[
+                                        "Current political affiliation category"
+                                      ]
+                                    );
+                                  } else {
+                                    if (
+                                      type ==
+                                      "Perceived closeness to the regime"
+                                    ) {
+                                      return closeness_scale(
+                                        d["Perceived closeness to the regime"]
+                                      );
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          });
+      }
+
+      function get_positions_new(input_data) {
+        var positions = [];
+        var idx = 0;
+        for (let i = 1; i <= row_n; i++) {
+          for (let j = 1; j <= column_n; j++) {
+            var x = 2 * total_radius_width * (j - 0.5);
+            var y = 80 + 2 * total_radius_height * (i - 0.75);
+            var obj = { row: i, column: j, x: x, y: y };
+            positions.push(obj);
+            idx += 1;
+          }
+        }
+        console.log("input_data", input_data);
+        positions
+          .sort(function (a, b) {
+            return d3.ascending(+a.y, +b.y);
+          })
+          .sort(function (a, b) {
+            return d3.ascending(+a.x, +b.x);
+          })
+          .forEach(function (d, i) {
+            input_data[i].x = d.x;
+            input_data[i].y = d.y;
+          });
+        console.log("positions", positions);
+      }
+
+      function get_positions(input_data) {
+        var totalN = 0;
+        var idx = 0;
+        var positions = [];
+        for (let i = 0; i < row_n; i++) {
+          var rowInnerRadius = innerRadius + i * row_height;
+          var rowOuterRadius = innerRadius + (i + 1) * row_height;
+          var area_per_row =
+            (Math.PI *
+              (Math.pow(rowOuterRadius, 2) - Math.pow(rowInnerRadius, 2))) /
+            2;
+          var n_per_row = Math.ceil(area_per_row / area_per_node);
+          var angle_per_node = 3.14159 / n_per_row;
+          if (i % 2 == 0) {
+            n_per_row -= 1;
+          }
+          for (let j = 0; j < n_per_row; j++) {
+            var nodeStartAngle = -1.5708 + j * angle_per_node;
+            var nodeEndAngle = -1.5708 + (j + 1) * angle_per_node;
+            if (i % 2 == 0) {
+              nodeStartAngle = nodeStartAngle + angle_per_node;
+            }
+            var node_arc_generator = d3
+              .arc()
+              .innerRadius(rowInnerRadius)
+              .outerRadius(rowOuterRadius)
+              .startAngle(nodeStartAngle)
+              .endAngle(nodeEndAngle);
+
+            var obj = {
+              position: node_arc_generator.centroid(),
+              nodeStartAngle: nodeStartAngle,
+              rowInnerRadius: rowInnerRadius,
+            };
+            positions.push(obj);
+            idx += 1;
+          }
+          totalN += n_per_row;
+        }
+        positions
+          .sort(function (a, b) {
+            return d3.ascending(+a.rowInnerRadius, +b.rowInnerRadius);
+          })
+          .sort(function (a, b) {
+            return d3.ascending(+a.nodeStartAngle, +b.nodeStartAngle);
+          })
+          .forEach(function (d, i) {
+            input_data[i].x = d.position[0];
+            input_data[i].y = d.position[1];
+          });
+        console.log("positions old", positions);
+      }
+
+      function init() {
+        var sorted_data = sort_data(data);
+        console.log(sorted_data);
+        get_positions_new(sorted_data);
+        populate_dropdown();
+
+        g.selectAll(".nodes")
+          .data(sorted_data)
+          .enter()
+          .append("circle")
+          .attr("class", "nodes")
+          .attr("id", function (d) {
+            return "node-" + d.id;
+          })
+          .attr("cx", function (d) {
+            return d.x;
+          })
+          .attr("cy", function (d) {
+            return d.y;
+          })
+          .attr("r", 0)
+          .attr("fill", function (d) {
+            return block_scale(d["Political block"]);
+          })
+          .on("mouseover", function (d, i) {
+            d3.selectAll(".nodes").style("stroke-width", function (d, idx) {
+              if (i == idx) {
+                return "2px";
+              } else {
+                return "0px";
+              }
+            });
+            show_node_tooltip(d);
+          });
+        //.on("mouseout", hide_node_tooltip);
+
+        g.selectAll(".nodes")
+          .transition()
+          .duration(animation_duration)
+          .attr("r", radius);
+      }
+
+      function show_node_tooltip(node_data) {
+        d3.select(".source-tooltip").style("display", "block");
+        if (type == "age") {
+          field = "age";
+        }
+        if (type == "block") {
+          field = "block";
+        }
+        if (type == "ethnicity") {
+          field = "ethnicity";
+        }
+        if (type == "education") {
+          field = "education";
+        }
+        if (type == "gender") {
+          field = "gender";
+        }
+        if (type == "occupation") {
+          field = "occupation";
+        }
+        if (type == "political_party") {
+          field = "political_party";
+        }
+        if (type == "prev_parliament") {
+          field = "prev_parliament";
+        }
+        if (type == "religion") {
+          field = "religion";
+        }
+        if (type == "constituency") {
+          field = "constituency";
+        }
+        d3.select(".source-tooltip-header").text(node_data.Name);
+        d3.select(".source-tooltip-content-0").html(
+          "<tspan class='tooltip-bold'>Political Block: </tspan>" +
+            node_data["Political block"]
+        );
+        d3.select(".source-tooltip-content-1").html(
+          "<tspan class='tooltip-bold'>Gender: </tspan>" + node_data.Gender
+        );
+
+        d3.select(".source-tooltip-content-2").html(
+          "<tspan class='tooltip-bold'>Age: </tspan>" + node_data.age_processed
+        );
+        d3.select(".source-tooltip-content-3").html(
+          "<tspan class='tooltip-bold'>Governate: </tspan>" +
+            node_data["Governorate of birth"]
+        );
+        d3.select(".source-tooltip-content-4").html(
+          "<tspan class='tooltip-bold'>Religion: </tspan>" + node_data.Religion
+        );
+        d3.select(".source-tooltip-content-5").html(
+          "<tspan class='tooltip-bold'>Ethicity: </tspan>" + node_data.Ethicity
+        );
+        d3.select(".source-tooltip-content-6").html(
+          "<tspan class='tooltip-bold'>Resides in Syria?: </tspan>" +
+            node_data["Resides in Syria?"]
+        );
+        d3.select(".source-tooltip-content-7").html(
+          "<tspan class='tooltip-bold'>Education: </tspan>" +
+            node_data["Educational attainment"]
+        );
+        d3.select(".source-tooltip-content-8").html(
+          "<tspan class='tooltip-bold'>Studied law?: </tspan>" +
+            node_data["Studied law?"]
+        );
+        d3.select(".source-tooltip-content-9").html(
+          "<tspan class='tooltip-bold'>Occupation: </tspan>" +
+            node_data.Occupation
+        );
+        d3.select(".source-tooltip-content-10").html(
+          "<tspan class='tooltip-bold'>Member of the Small Body?: </tspan>" +
+            node_data["Member of the Small Body?"]
+        );
+        d3.select(".source-tooltip-content-11").html(
+          "<tspan class='tooltip-bold'>Current political affiliation: </tspan>" +
+            node_data["Current political affiliation"]
+        );
+        d3.select(".source-tooltip-content-12").html(
+          "<tspan class='tooltip-bold'>Perceived closeness to the regime: </tspan>" +
+            node_data["Perceived closeness to the regime"]
+        );
+
+        let x = d3.event.clientX;
+        let y = d3.event.clientY;
+        let xCheck = d3.event.layerX;
+
+        let tooltipWidth = d3
+          .select(".source-tooltip")
+          .node()
+          .getBoundingClientRect().width;
+        let tooltipHeight = d3
+          .select(".source-tooltip")
+          .node()
+          .getBoundingClientRect().height;
+
+        let svgWidth = d3.select("svg").style("width").slice(0, -2);
+        let svgHeight = d3.select("svg").style("height").slice(0, -2);
+
+        /*d3.select(".source-tooltip").style(
+            "transform",
+            `translate(${x}px,${y}px)`
+          );*/
+      }
+
+      function hide_node_tooltip() {
+        d3.select(".source-tooltip").style("display", "none");
+        d3.selectAll(".nodes").style("stroke-width", "0px");
+      }
+
+      function sort_data(data) {
+        sorted_data = data.sort(function (a, b) {
+          var order_list;
+          if (type == "age") {
+            order_list = age_order;
+          }
+          if (type == "Gender") {
+            order_list = gender_order;
+          }
+          if (type == "Governorate of birth") {
+            order_list = governate_order;
+          }
+          if (type == "Religion") {
+            order_list = religion_order;
+          }
+          if (type == "Ethicity") {
+            order_list = ethnicity_order;
+          }
+          if (type == "Resides in Syria?") {
+            order_list = resides_order;
+          }
+          if (type == "Educational attainment") {
+            order_list = educational_order;
+          }
+          if (type == "Studied law?") {
+            order_list = studied_order;
+          }
+          if (type == "Occupation category") {
+            order_list = occupation_category_order;
+          }
+          if (type == "Political block") {
+            order_list = block_order;
+          }
+          if (type == "Member of the Small Body?") {
+            order_list = small_body_order;
+          }
+          if (type == "Current political affiliation category") {
+            order_list = affiliation_order;
+          }
+          if (type == "Perceived closeness to the regime") {
+            order_list = closeness_order;
+          }
+          if (type != "age") {
+            return d3.ascending(
+              order_list.indexOf(a[type]),
+              order_list.indexOf(b[type])
+            );
+          } else {
+            return d3.ascending(+a.age, +b.age);
+          }
+        });
+        return sorted_data;
+      }
+    </script>
+  </body>
+</html>
